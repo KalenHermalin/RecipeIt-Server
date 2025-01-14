@@ -21,5 +21,7 @@ if no recipe is found by the LLM the error will be generated saying that no reci
 
 ## Dependices 
 https://github.com/TobyG74/tiktok-api-dl
+
 https://github.com/instaloader/instaloader
+
 https://github.com/ytdl-org/youtube-dl
