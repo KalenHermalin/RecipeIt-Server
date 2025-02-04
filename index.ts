@@ -1,9 +1,8 @@
-import { youtubeDl } from 'youtube-dl-exec';
 import express, { Request, Response } from "express";
 import * as fs from "fs";
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { result } from './src/types';
+import { downloadResult, result } from './src/types';
 import { Downloader } from './src/downloader';
 
 export const __filename = fileURLToPath(import.meta.url);
@@ -11,58 +10,56 @@ export const __dirname = path.dirname(__filename);
 
 
 async function downloadYoutube(url: string): Promise<null | Error> {
-  let k = await youtubeDl(`${url}`, {
-    extractAudio: true,
-    audioFormat: 'mp3',
-    output: `${__dirname}/data/video.%(ext)s`,
-    format: 'bestaudio',
-  });
-  if (fs.existsSync(`${__dirname}/data/video.mp3`)) {
-    return null;
-  } else {
-    let error: Error = Error("Error downloading youtube");
-    return error;
-  }
+  return null;
 }
 
-async function tikTokHandler(url: string): Promise<result> {
-  // RATE LIMITING
+async function tikTokHandler(url: string): Promise<downloadResult> {
   return await Downloader.tiktok(url)
 
 }
 
 
-async function downloadInsta(url: string): Promise<result> {
+async function downloadInsta(url: string): Promise<downloadResult> {
   return await Downloader.insta(url);
 }
-
+function parseURL(url: string): string {
+  if (url.includes("instagram")) return "instagram"
+  else if (url.includes("youtube")) return "youtube"
+  else if (url.includes("tiktok")) return "tiktok"
+  return "invalid"
+}
 async function downloadHandler(req: Request, res: Response) {
-  let downloadSource: string = req.headers["download-source"] as string;
   let downloadUrl: string = req.headers["download-url"] as string;
+  let downloadSource: string = parseURL(downloadUrl)
   let result: result;
   switch (downloadSource) {
     case "youtube":
-      result = { status: "error", recipe: {}, error: "Instagram Downloads Not Implemented Yet" };
+      result = { status: "error", recipe: {}, error: "Youtube Downloads Not Implemented Yet" };
       res.status(500).send(result);
       break;
     case "tiktok":
-      result = await tikTokHandler(downloadUrl);
-      res.send(result)
+      res.send(await tikTokHandler(downloadUrl))
       break;
 
     case "instagram":
-      result = await downloadInsta(downloadUrl);
-      res.send(result);
+      res.send(await downloadInsta(downloadUrl));
       break;
     default: res.status(400).send("Invalid download source");
   }
   return;
 
 }
-
+async function recipeHandler(req: Request, res: Response) {
+  // 
+  console.log(req.params)
+  const videoId: string = req.params["videoId"];
+  // FIND RECIPE and RETURN
+  res.send(`received ${videoId}`)
+}
 const app = express();
 app.use(express.json());
-app.get("/download", downloadHandler);
+app.get("/recipes/:videoId", recipeHandler);
+app.post("/videos", downloadHandler)
 
 app.listen(8080, () => {
   console.log("Server is running on port 8080");
