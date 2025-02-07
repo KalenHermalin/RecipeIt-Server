@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { downloadResult, result } from './src/types';
 import { Downloader } from './src/downloader';
-
+import { RecipeExtractor } from "./src/recipeExtractor";
 export const __filename = fileURLToPath(import.meta.url);
 export const __dirname = path.dirname(__filename);
 
@@ -51,10 +51,10 @@ async function downloadHandler(req: Request, res: Response) {
 }
 async function recipeHandler(req: Request, res: Response) {
   // 
-  console.log(req.params)
   const videoId: string = req.params["videoId"];
   // FIND RECIPE and RETURN
-  res.send(`received ${videoId}`)
+  const t = await RecipeExtractor.createRecipe(videoId);
+  res.send(`received ${videoId}, ${t}`)
 }
 const app = express();
 app.use(express.json());

@@ -2,18 +2,19 @@
 import { result, resultSchema } from "./types";
 import * as fs from "fs";
 import groq from 'groq-sdk';
+import { __dirname, __filename } from '../index';
+import path from "path";
 
 
 export abstract class RecipeExtractor {
     private static gClient = new groq({
         apiKey: process.env.GROQ_KEY,
     });
-    public static extract(transcript: string): result {
+    private static extract(transcript: string): result {
         let obj: result = JSON.parse(transcript);
         return obj;
     }
-    public static async transcribe(path: string): Promise<string> {
-        console.log("transcribing")
+    private static async transcribe(path: string): Promise<string> {
         const transcript = await this.gClient.audio.transcriptions.create({
             file: fs.createReadStream(path),
             model: "distil-whisper-large-v3-en",
@@ -21,7 +22,7 @@ export abstract class RecipeExtractor {
         return transcript.text;
     }
 
-    public static async analyzeText(text: string): Promise<string> {
+    private static async analyzeText(text: string): Promise<string> {
         const response = await this.gClient.chat.completions.create({
             messages: [
                 {
@@ -43,4 +44,19 @@ export abstract class RecipeExtractor {
         return response.choices[0].message.content as string;
     }
 
+    public static async createRecipe(videoId: string) {
+        const vidPath = path.join(__dirname, "videos", `${videoId}`, "vid.flac");
+
+        if (fs.existsSync(path.dirname(vidPath))) {
+            const descPath = path.join(__dirname, "videos", `${videoId}`, "desc.txt")
+            if (fs.existsSync(descPath)) {
+                const desc: string = fs.readFileSync(descPath).toString();
+                const result = this.extract(await this.analyzeText(desc));
+                if (result.status == 'success') return result;
+            }
+            const transcript = await this.transcribe(vidPath);
+            const result = this.extract(await this.analyzeText(transcript));
+            return result;
+        }
+    }
 }

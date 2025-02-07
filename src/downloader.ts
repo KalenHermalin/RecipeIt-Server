@@ -17,7 +17,7 @@ export abstract class Downloader {
             if (data.status === "success" && data.result) {
                 const url = data.result.videoHD;
                 const UUID = randomUUID()
-                const descPath = path.join(__dirname, "videos", "tiktok", `${UUID.toString()}.txt`)
+                const descPath = path.join(__dirname, "videos", `${UUID.toString()}`, "desc.txt")
                 const descDir = path.dirname(descPath);
 
                 if (!fs.existsSync(descDir)) {
@@ -37,7 +37,7 @@ export abstract class Downloader {
 
                 if (video?.body) {
 
-                    const vidPath = path.join(__dirname, "videos", "tiktok", `${UUID.toString()}.flac`)
+                    const vidPath = path.join(__dirname, "videos", `${UUID.toString()}`, "vid.flac")
 
                     let _file = fs.createWriteStream(vidPath);
                     let stream: WritableStream<Uint8Array> = new WritableStream({
@@ -49,8 +49,6 @@ export abstract class Downloader {
                         }
                     });
                     await video.body.pipeTo(stream);
-                    //const tiktokFlacPath = path.join(__dirname, "videos", "tiktok", `${UUID.toString()}.kalen`);
-                    //  await this.execs(`ffmpeg  -i "${vidPath}" -ar 16000  -ac 1  -map 0:a  -c:a flac  "${tiktokFlacPath}"`);
                     if (!fs.existsSync(vidPath)) {
                         result.error = "Error saving video"
                         result.status = 'error'
@@ -65,27 +63,6 @@ export abstract class Downloader {
                     result.status = "error"
                     result.error = "Error resolving video"
                 }
-                /*  if (data.result.desc) {
-                      recipe = RecipeExtractor.extract(await RecipeExtractor.analyzeText(data.result.desc));
-                      if (recipe.status === "success") {
-                          return recipe;
-                      }
-                  }
-                 
-                      const transcript = await RecipeExtractor.transcribe(tiktokFlacPath)
-                      recipe = RecipeExtractor.extract(await RecipeExtractor.analyzeText(transcript));
-                      fs.unlink(tiktokMp4Path, (err) => { if (err) console.log(err) });
-                      fs.unlink(tiktokFlacPath, (err) => { if (err) console.log(err) });
-                      if (recipe.status === "success") {
-                          return recipe;
-                      }
-                      return recipe;
-                  }
-                  recipe.error = "Error downloading tiktok";
-                  return recipe;
-              }
-              recipe.error = "Error finding tiktok";
-              return recipe;*/
             }
             result.error = "Error finding titkok"
             result.status = 'error'
@@ -116,7 +93,7 @@ export abstract class Downloader {
         }
         const commentPath = path.join(__dirname, `-${id}`, `insta.txt`);
 
-        const descPath = path.join(__dirname, "videos", "insta", `${UUID.toString()}.txt`)
+        const descPath = path.join(__dirname, "videos", `${UUID.toString()}`, "desc.txt")
         if (fs.existsSync(commentPath)) {
             const descDir = path.dirname(descPath);
             if (!fs.existsSync(descDir)) {
@@ -137,15 +114,15 @@ export abstract class Downloader {
                 return result;
             }
         }
-        const vidPath = path.join(__dirname, "videos", "insta", `${UUID.toString()}.flac`)
+        const vidPath = path.join(__dirname, "videos", `${UUID.toString()}`, "vid.flac")
 
         await this.execs(`ffmpeg  -i "${oldVidPath}" -ar 16000  -ac 1  -map 0:a  -c:a flac  "${vidPath}"`);
+        const oldDirPath = path.dirname(oldVidPath);
         if (fs.existsSync(vidPath)) {
 
-            const dirPath = path.dirname(oldVidPath);
-            fs.rm(dirPath, { recursive: true, force: true }, (err) => {
+            fs.rm(oldDirPath, { recursive: true, force: true }, (err) => {
                 if (err)
-                    console.error(`Error: ${err}\n Path: ${dirPath}`)
+                    console.error(`Error: ${err}\n Path: ${oldDirPath}`)
             })
             result.status = 'success'
             result.error = ''
@@ -154,7 +131,7 @@ export abstract class Downloader {
         }
         else {
 
-            fs.rm(oldVidPath, (err) => {
+            fs.rm(oldDirPath, { recursive: true, force: true }, (err) => {
                 if (err)
                     console.error(`Error: ${err}\n File:${oldVidPath}`)
             })
