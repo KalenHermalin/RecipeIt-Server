@@ -14,7 +14,7 @@ export abstract class RecipeExtractor {
         let obj: result = JSON.parse(transcript);
         return obj;
     }
-    private static async transcribe(path: string): Promise<string> {
+    public static async transcribe(path: string): Promise<string> {
         const transcript = await this.gClient.audio.transcriptions.create({
             file: fs.createReadStream(path),
             model: "distil-whisper-large-v3-en",
@@ -22,7 +22,7 @@ export abstract class RecipeExtractor {
         return transcript.text;
     }
 
-    private static async analyzeText(text: string): Promise<string> {
+    public static async analyzeText(text: string): Promise<result> {
         const response = await this.gClient.chat.completions.create({
             messages: [
                 {
@@ -41,22 +41,6 @@ export abstract class RecipeExtractor {
             model: "llama-3.1-8b-instant",
             temperature: 0.1
         });
-        return response.choices[0].message.content as string;
-    }
-
-    public static async createRecipe(videoId: string) {
-        const vidPath = path.join(__dirname, "videos", `${videoId}`, "vid.flac");
-
-        if (fs.existsSync(path.dirname(vidPath))) {
-            const descPath = path.join(__dirname, "videos", `${videoId}`, "desc.txt")
-            if (fs.existsSync(descPath)) {
-                const desc: string = fs.readFileSync(descPath).toString();
-                const result = this.extract(await this.analyzeText(desc));
-                if (result.status == 'success') return result;
-            }
-            const transcript = await this.transcribe(vidPath);
-            const result = this.extract(await this.analyzeText(transcript));
-            return result;
-        }
+        return this.extract(response.choices[0].message.content as string);
     }
 }

@@ -27,9 +27,9 @@ export abstract class Downloader {
                     try {
                         fs.writeFileSync(descPath, data.result.desc);
                     } catch (err) {
-                        result.status = "error";
-                        result.error = "Error writing discription"
-                        console.warn("Error writing discription: ", err)
+                        const error = new Error("Error Saving Discription")
+                        error.name = "ESD"
+                        throw error;
                     }
                 }
 
@@ -50,8 +50,9 @@ export abstract class Downloader {
                     });
                     await video.body.pipeTo(stream);
                     if (!fs.existsSync(vidPath)) {
-                        result.error = "Error saving video"
-                        result.status = 'error'
+                        const error = new Error("Error Downloading Video")
+                        error.name = "EDV";
+                        throw error;
                     }
                     result.status = "success";
                     result.error = '';
@@ -60,13 +61,13 @@ export abstract class Downloader {
                     return result
 
                 } else {
-                    result.status = "error"
-                    result.error = "Error resolving video"
+                    const error = new Error("Error Resolving Video")
+                    error.name = "ERV"
                 }
             }
-            result.error = "Error finding titkok"
-            result.status = 'error'
-            return result;
+            const error = new Error("Error Finding Video")
+            error.name = "EFV"
+            throw error;
         });
     }
 
@@ -77,19 +78,19 @@ export abstract class Downloader {
         const id = reelIdRegex.exec(url)?.[1];
 
         if (!id) {
-            console.error("ID ERROR")
-            result.error = "Cannot find reel"
-            return result;
+            const error = new Error("Error Invalid Video ID")
+            error.name = "EIV"
+            throw error
         }
 
         const UUID = randomUUID()
         await this.execs(`instaloader --no-video-thumbnails --no-metadata-json --no-pictures  --slide 1 --filename-pattern=insta -q -- -${id}`);
         const oldVidPath = path.join(__dirname, `-${id}`, `insta_1.mp4`);
         if (!fs.existsSync(oldVidPath)) {
-            result.error = "Error downloading instagram reel"
-            result.status = "error"
-            console.error("DOWNLOAD ERROR")
-            return result
+            const error = new Error("Error Downloadning Video")
+            error.name = "EDV";
+            throw error;
+
         }
         const commentPath = path.join(__dirname, `-${id}`, `insta.txt`);
 
@@ -103,15 +104,16 @@ export abstract class Downloader {
                 fs.renameSync(commentPath, descPath)
 
             } catch (error) {
-                result.error = "Error modifying video file"
-                result.status = 'error'
-                console.error("RENAME ERROR:", error)
                 fs.rm(commentPath, (err) => {
                     if (err) {
                         console.warn("Clean up failed: ", err)
                     }
                 })
-                return result;
+                const err = new Error("Error Saving Discription")
+                err.name = "ESD";
+                throw error;
+
+
             }
         }
         const vidPath = path.join(__dirname, "videos", `${UUID.toString()}`, "vid.flac")
@@ -122,7 +124,7 @@ export abstract class Downloader {
 
             fs.rm(oldDirPath, { recursive: true, force: true }, (err) => {
                 if (err)
-                    console.error(`Error: ${err}\n Path: ${oldDirPath}`)
+                    console.warn(`Clean up failed: `, err)
             })
             result.status = 'success'
             result.error = ''
@@ -139,10 +141,9 @@ export abstract class Downloader {
                 if (err)
                     console.error(`Error: ${err}\n File:${descPath}`)
             })
-            console.error("CONVERTING ERROR")
-            result.error = "Error converting to flac"
-            result.status = "error"
-            return result;
+            const error = new Error("Error Converting Video")
+            error.name = "ECV"
+            throw error
         }
     }
 
