@@ -2,18 +2,19 @@
 import { result, resultSchema } from "./types";
 import * as fs from "fs";
 import groq from 'groq-sdk';
+import { __dirname, __filename } from '../index';
+import path from "path";
 
 
 export abstract class RecipeExtractor {
     private static gClient = new groq({
         apiKey: process.env.GROQ_KEY,
     });
-    public static extract(transcript: string): result {
+    private static extract(transcript: string): result {
         let obj: result = JSON.parse(transcript);
         return obj;
     }
     public static async transcribe(path: string): Promise<string> {
-        console.log("transcribing")
         const transcript = await this.gClient.audio.transcriptions.create({
             file: fs.createReadStream(path),
             model: "distil-whisper-large-v3-en",
@@ -21,7 +22,7 @@ export abstract class RecipeExtractor {
         return transcript.text;
     }
 
-    public static async analyzeText(text: string): Promise<string> {
+    public static async analyzeText(text: string): Promise<result> {
         const response = await this.gClient.chat.completions.create({
             messages: [
                 {
@@ -40,7 +41,6 @@ export abstract class RecipeExtractor {
             model: "llama-3.1-8b-instant",
             temperature: 0.1
         });
-        return response.choices[0].message.content as string;
+        return this.extract(response.choices[0].message.content as string);
     }
-
 }
